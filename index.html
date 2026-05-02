@@ -14,7 +14,6 @@
             padding: 40px;
         }
 
-        /* Top-left logo */
         .logo {
             position: absolute;
             top: 35px;
@@ -31,7 +30,7 @@
             border-radius: 10px;
             width: 350px;
             box-shadow: 0 0 10px rgba(0,0,0,0.4);
-            margin-top: 80px; /* space so logo doesn't overlap */
+            margin-top: 80px;
         }
 
         label {
@@ -78,7 +77,6 @@
 </head>
 <body>
 
-    <!-- Logo in top-left -->
     <div class="logo">
         <img src="logo.png" alt="EchoLearn Logo">
     </div>
@@ -104,69 +102,83 @@
     </div>
 
     <script>
-        const fileInput = document.getElementById("fileInput");
-        const statusBox = document.getElementById("status");
-        const downloadBtn = document.getElementById("downloadBtn");
+    const fileInput = document.getElementById("fileInput");
+    const statusBox = document.getElementById("status");
+    const downloadBtn = document.getElementById("downloadBtn");
 
-        async function generatePodcast() {
-            const file = fileInput.files[0];
-            if (!file) {
-                statusBox.innerText = "Please upload a file first.";
-                return;
-            }
-
-            // STEP 1 — Upload file and get script
-            const formData = new FormData();
-            formData.append("file", file);
-
-            statusBox.innerText = "Extracting text and generating script…";
-
-            const scriptRes = await fetch("https://echo-learn-server-339866437025.europe-west1.run.app/script", {
-                method: "POST",
-                body: formData
-            });
-
-            const scriptData = await scriptRes.json();
-
-            if (!scriptData.script) {
-                statusBox.innerText = "Failed to generate script.";
-                return;
-            }
-
-            statusBox.innerText = "Script generated! Creating podcast…";
-
-            // STEP 2 — Send script to podcast endpoint
-            const podcastRes = await fetch("https://echo-learn-server-339866437025.europe-west1.run.app/podcast", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ script: scriptData.script })
-            });
-
-            if (!podcastRes.ok) {
-                statusBox.innerText = "Failed to generate podcast.";
-                return;
-            }
-
-            // STEP 3 — Convert MP3 response to Blob
-            const blob = await podcastRes.blob();
-            const url = URL.createObjectURL(blob);
-
-            // STEP 4 — Enable download button
-            downloadBtn.style.display = "block";
-            downloadBtn.onclick = () => {
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "podcast.mp3";
-                a.click();
-            };
-
-            statusBox.innerText = "Podcast ready! Click download.";
+    async function generatePodcast() {
+        const file = fileInput.files[0];
+        if (!file) {
+            statusBox.innerText = "Please upload a file first.";
+            return;
         }
 
-        document.getElementById("submitBtn").addEventListener("click", generatePodcast);
-    </script>
+        // STEP 1 — Upload file and get script
+        const formData = new FormData();
+        formData.append("file", file);
 
+        statusBox.innerText = "Extracting text and generating script…";
 
+        const scriptRes = await fetch(
+            "https://echo-learn-server-339866437025.europe-west1.run.app/script",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        if (!scriptRes.ok) {
+            statusBox.innerText = "Failed to generate script (server error).";
+            return;
+        }
+
+        const scriptData = await scriptRes.json();
+
+        if (!scriptData.script) {
+            statusBox.innerText = "Script generation failed.";
+            return;
+        }
+
+        statusBox.innerText = "Script generated! Creating podcast…";
+
+        // STEP 2 — Send script + theme to podcast endpoint
+        const theme = document.getElementById("themeSelect").value;
+
+        const podcastRes = await fetch(
+            "https://echo-learn-server-339866437025.europe-west1.run.app/podcast",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    script: scriptData.script,
+                    theme: theme
+                })
+            }
+        );
+
+        if (!podcastRes.ok) {
+            statusBox.innerText = "Failed to generate podcast.";
+            return;
+        }
+
+        // STEP 3 — Convert MP3 response to Blob
+        const blob = await podcastRes.blob();
+        const url = URL.createObjectURL(blob);
+
+        // STEP 4 — Enable download button
+        downloadBtn.style.display = "block";
+        downloadBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "podcast.mp3";
+            a.click();
+        };
+
+        statusBox.innerText = "Podcast ready! Click download.";
+    }
+
+    document.getElementById("submitBtn").addEventListener("click", generatePodcast);
+</script>
 
 
 </body>
