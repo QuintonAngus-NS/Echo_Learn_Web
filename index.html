@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EchoLearn Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0b1a33;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+        }
+
+        /* Top-left logo */
+        .logo {
+            position: absolute;
+            top: 35px;
+            left: 35px;
+        }
+
+        .logo img {
+            width: 200px;
+        }
+
+        .container {
+            background: #112244;
+            padding: 20px 30px;
+            border-radius: 10px;
+            width: 350px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+            margin-top: 80px; /* space so logo doesn't overlap */
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+
+        select, input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+            background: #00ff88;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        #downloadBtn {
+            display: none;
+            background: #00c3ff;
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Logo in top-left -->
+    <div class="logo">
+        <img src="logo.png" alt="EchoLearn Logo">
+    </div>
+
+    <h1>EchoLearn Test Interface</h1>
+
+    <div class="container">
+        <label>Upload your file</label>
+        <input type="file" id="fileInput">
+
+        <label>Select a theme</label>
+        <select id="themeSelect">
+            <option value="energetic">Energetic</option>
+            <option value="calm">Calm</option>
+            <option value="educational">Educational</option>
+            <option value="professional">Professional</option>
+        </select>
+
+        <button id="submitBtn">Generate Podcast</button>
+        <button id="downloadBtn">Download Podcast</button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const statusBox = document.getElementById("status");
+        const downloadBtn = document.getElementById("downloadBtn");
+
+        async function generatePodcast() {
+            const file = fileInput.files[0];
+            if (!file) {
+                statusBox.innerText = "Please upload a file first.";
+                return;
+            }
+
+            // STEP 1 — Upload file and get script
+            const formData = new FormData();
+            formData.append("file", file);
+
+            statusBox.innerText = "Extracting text and generating script…";
+
+            const scriptRes = await fetch("https://echo-learn-server-339866437025.europe-west1.run.app/script", {
+                method: "POST",
+                body: formData
+            });
+
+            const scriptData = await scriptRes.json();
+
+            if (!scriptData.script) {
+                statusBox.innerText = "Failed to generate script.";
+                return;
+            }
+
+            statusBox.innerText = "Script generated! Creating podcast…";
+
+            // STEP 2 — Send script to podcast endpoint
+            const podcastRes = await fetch("https://echo-learn-server-339866437025.europe-west1.run.app/podcast", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ script: scriptData.script })
+            });
+
+            if (!podcastRes.ok) {
+                statusBox.innerText = "Failed to generate podcast.";
+                return;
+            }
+
+            // STEP 3 — Convert MP3 response to Blob
+            const blob = await podcastRes.blob();
+            const url = URL.createObjectURL(blob);
+
+            // STEP 4 — Enable download button
+            downloadBtn.style.display = "block";
+            downloadBtn.onclick = () => {
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "podcast.mp3";
+                a.click();
+            };
+
+            statusBox.innerText = "Podcast ready! Click download.";
+        }
+
+        document.getElementById("submitBtn").addEventListener("click", generatePodcast);
+    </script>
+
+
+
+
+</body>
+</html>
