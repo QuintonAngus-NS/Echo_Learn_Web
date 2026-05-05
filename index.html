@@ -120,7 +120,7 @@
         statusBox.innerText = "Extracting text and generating script…";
 
         const scriptRes = await fetch(
-            "https://echo-learn-server-339866437025.europe-west1.run.app/script",
+            "https://echo-learn-server-487388849566.europe-west1.run.app/script",
             {
                 method: "POST",
                 body: formData
@@ -145,7 +145,7 @@
         const theme = document.getElementById("themeSelect").value;
 
         const podcastRes = await fetch(
-            "https://echo-learn-server-339866437025.europe-west1.run.app/podcast",
+            "https://echo-learn-server-487388849566.europe-west1.run.app/podcast",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
